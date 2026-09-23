@@ -4,17 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "Person.h"
-#include "LessonInterface.h"
-#include "Student.generated.h"
+#include "Staff.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class CPPUNREAL_API UStudent : public UPerson, public ILessonInterface
+class CPPUNREAL_API UStaff : public UPerson
 {
 	GENERATED_BODY()
 	
 public:
-	UStudent();
+	UStaff();
 };

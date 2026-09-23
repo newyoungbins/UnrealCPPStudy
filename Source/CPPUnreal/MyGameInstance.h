@@ -15,6 +15,7 @@ class CPPUNREAL_API UMyGameInstance : public UGameInstance
 	GENERATED_BODY()
 	
 public:
+	// 생성자
 	UMyGameInstance();
 
 private:
