@@ -3,56 +3,8 @@
 
 #include "MyGameInstance.h"
 #include "Student.h"
-#include "StudentManager.h"
-#include "Teacher.h"
-#include "Staff.h"
-#include "Card.h"
-#include "CourseInfo.h"
-#include <Algo/Accumulate.h>
 
-// 이름 값을 랜덤으로 생성하는 함수.
-FString MakeRandomName()
-{
-	TCHAR FirstChar[] = TEXT("김이박최");
-	TCHAR MiddleChar[] = TEXT("상혜지성");
-	TCHAR LastChar[] = TEXT("수은연원");
 
-	TArray<TCHAR> RandArray;
-	// 세 글자로 이름을 만들기 위해 3개의 공간 확보.
-	RandArray.SetNum(3);
-	RandArray[0] = FirstChar[FMath::RandRange(0, 3)];
-	RandArray[1] = MiddleChar[FMath::RandRange(0, 3)];
-	RandArray[2] = LastChar[FMath::RandRange(0, 3)];
-
-	// 이름 문자열로 변환해서 반환.
-	return RandArray.GetData();
-}
-
-// 객체의 유효성 검사 함수.
-void CheckUObjectIsValid(const UObject* InObject, const FString& InTag)
-{
-	if (InObject->IsValidLowLevel())
-	{
-		UE_LOG(LogTemp, Log, TEXT("[%s] 유효한 오브젝트"), *InTag);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("[%s] 유효한 오브젝트"), *InTag);
-	}
-}
-
-// 객체의 Null 여부 확인 함수.
-void CheckUObjectIsNull(const UObject* InObject, const FString& InTag)
-{
-	if (nullptr == InObject)
-	{
-		UE_LOG(LogTemp, Log, TEXT("[%s] 널 포인터 언리얼 오브젝트"), *InTag);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("[%s] 널 포인터가 아닌 언리얼 오브젝트"), *InTag);
-	}
-}
 
 UMyGameInstance::UMyGameInstance()
 {
@@ -66,46 +18,65 @@ void UMyGameInstance::Init()
 	Super::Init();
 
 	// 객체 생성.
-	NonPropStudent = NewObject<UStudent>();
-	PropStudent = NewObject<UStudent>();
+	FStudentData RawDataSource(TEXT("정영빈"), 42);
+	
+	// 파일로 다루기 위해 경로 설정.
+	// 프로젝트 경로/ Saved 경로 지정.
+	const FString SavedPath = FPaths::Combine(FPlatformMisc::ProjectDir(), TEXT("Saved"));
 
-	// 배열에 원소 추가.
-	NonPropStudents.Add(NewObject<UStudent>());
-	PropStudents.Add(NewObject<UStudent>());
+	// 경로 출력.
+	UE_LOG(LogTemp, Log, TEXT("저장할 파일 폴더: %s"), *SavedPath);
 
-	// StudentManager 객체 생성.
-	StudentManager = new FStudentManager(NewObject<UStudent>());
-}
+	// 직렬화 구간.
+	{
+		// 저장할 파일 이름.
+		const FString RawDataFileName(TEXT("RawData.bin"));
 
-void UMyGameInstance::Shutdown()
-{
-	Super::Shutdown();
+		// 파일 이름을 포함한 최종 경로.
+		FString RawDataAbsolutePath = FPaths::Combine(SavedPath, RawDataFileName);
 
-	// 삭제 하기 전에 관리하던 UObject 가져오기.
-	const UStudent* StudentInManager = StudentManager->GetSutudent();
+		// 경로 출력 (테스트).
+		UE_LOG(LogTemp, Log, TEXT("저장할 전체 파일 경로 : %s"), *RawDataAbsolutePath);
 
-	// 메모리 정리.
-	delete StudentManager;
-	StudentManager = nullptr;
+		// 경로 정리.
+		FPaths::MakeStandardFilename(RawDataAbsolutePath);
 
-	// StudentManager 에서 관리하던 UObject 확인.
-	CheckUObjectIsNull(StudentInManager, TEXT("StudentInManager"));
-	CheckUObjectIsValid(StudentInManager, TEXT("StudentInManager"));
+		// 변경된 경로 출력.
+		UE_LOG(LogTemp, Log, TEXT("저장할 전체 파일 경로 : %s"), *RawDataAbsolutePath);
+	}
 
-	// NonPropStudent 확인.
-	CheckUObjectIsNull(NonPropStudent, TEXT("NonPropStudent"));
-	CheckUObjectIsValid(NonPropStudent, TEXT("NonPropStudent"));
+	// 오브젝트 직렬화.
+	// 1. 직렬화 처리를 위한 아카이브 생성.
 
-	// PropStudent 확인.
-	CheckUObjectIsNull(PropStudent, TEXT("PropStudent"));
-	CheckUObjectIsValid(PropStudent, TEXT("PropStudent"));
+	// 언리얼 오브젝트 직렬화.
+	StudentSrc = NewObject<UStudent>();
+	StudentSrc->SetOrder(100);
+	StudentSrc->SetName(TEXT("YoungBin"));
+	{
+		// 파일 이름.
+		const FString& ObjectDataFileName(TEXT("ObjectData.bin"));
 
-	// NonPropStudents 배열 내부의 언리얼 오브젝트 확인.
-	CheckUObjectIsNull(NonPropStudents[0], TEXT("NonPropStudents"));
-	CheckUObjectIsValid(NonPropStudents[0], TEXT("NonPropStudents"));
+		// 최종 경로 설정.
+		FString ObjectDataPath = FPaths::Combine(SavedPath, ObjectDataFileName);
+		FPaths::MakeStandardFilename(ObjectDataPath);
 
-	// PropStudents 배열 내부의 언리얼 오브젝트 확인.
-	CheckUObjectIsNull(PropStudents[0], TEXT("PropStudents"));
-	CheckUObjectIsValid(PropStudents[0], TEXT("PropStudents"));
+		// 직렬화.
+		// 1. 메모리 직렬화.
+		TArray<uint8> Buffer;
+		FMemoryWriter MemoryWriter(Buffer);
+		// 오브젝트 직렬화.
+		StudentSrc->Serialize(MemoryWriter);
 
+		// 2. 파일에 기록.
+		TUniquePtr<FArchive> FileWriter = TUniquePtr<FArchive>(IFileManager::Get().CreateFileWriter(*ObjectDataPath));
+
+		if (FileWriter)
+		{
+			// 기록.
+			*FileWriter << Buffer;
+
+			// 파일 닫기.
+			FileWriter->Close();
+		}
+	}
 }

@@ -40,6 +40,16 @@ struct FStudentData
 		return GetTypeHash(InStudentData.Order);
 	}
 
+	// 연산자 오버로딩 - 편의 목적.
+	friend FArchive& operator<<(FArchive& Archive, FStudentData& InStudentData)
+	{
+		// 직렬화.
+		Archive << InStudentData.Order;
+		Archive << InStudentData.Name;
+
+		return Archive;
+	}
+
 	UPROPERTY()
 	FString Name;
 
@@ -63,20 +73,7 @@ private:
 	// 게임 인스턴스 초기화 함수.
 	virtual void Init() override;
 
-	// 게임 인스턴스 종료 함수.
-	virtual void Shutdown() override;
-
 private:
-	
-	TObjectPtr<UStudent> NonPropStudent;
-
 	UPROPERTY()
-	TObjectPtr<UStudent> PropStudent;
-
-	TArray<TObjectPTc<UStudent>> NonPropStudents;
-
-	UPROPERTY()
-	TArray<TObjectPTc<UStudent>> PropStudents;
-
-	FStudentManager* StudentManager = nullptr;
+	TObjectPtr<class UStudent> StudentSrc;
 };
