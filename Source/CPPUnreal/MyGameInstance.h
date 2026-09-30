@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include <Engine/StreamableManager.h>
 #include "MyGameInstance.generated.h"
 
 // 전방선언.
@@ -86,4 +87,10 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<class UStudent> StudentSrc;
+
+	// 비동기 애셋 로드에 사용할 매니저.
+	FStreamableManager StreamableManager;
+
+	// 애셋 로드에 사용할 핸들.
+	TSharedPtr<FStreamableHandle> Handle;
 };

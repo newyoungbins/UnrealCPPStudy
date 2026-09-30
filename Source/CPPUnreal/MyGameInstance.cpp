@@ -185,6 +185,33 @@ void UMyGameInstance::Init()
 	//SaveStudentPackage();
 	LoadStudentPackage();
 	LoadStudentObject();
+
+	// 애셋 스트리밍을 통한 애셋 로드.
+	const FString TopSoftObjectPath
+		= FString::Printf(TEXT("%s.%s"), *PackageName, *AssetName);
+
+	// 비동기 애셋 로드 요청.
+	StreamableManager.RequestAsyncLoad(
+		TopSoftObjectPath,
+		[&]()
+		{
+			// 제대로 로드 됐는지 확인.
+			if (Handle.IsValid() && Handle->HasLoadCompleted())
+			{
+				// Student 객체 불러오기.
+				UStudent* TopStudent = Cast<UStudent>(Handle->GetLoadedAsset());
+				if (TopStudent)
+				{
+					PrintStudentInfo(TopStudent, TEXT("AsyncLoad"));
+				}
+
+				// 사용한 핸들 해제 및 초기화.
+				Handle->ReleaseHandle();
+				Handle.Reset();
+			}
+
+		}
+	);
 }
 
 void UMyGameInstance::SaveStudentPackage() const
